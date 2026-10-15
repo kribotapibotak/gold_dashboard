@@ -170,7 +170,7 @@ st.markdown('<p class="grammar"><b>Solid</b> marks reported series, '
             '<b>dashed</b> marks estimates. Each country keeps one colour on '
             'every panel.</p>', unsafe_allow_html=True)
 
-tabD, tabI = st.tabs(["Declared", "Inferred"])
+tabD, tabI, tabC = st.tabs(["Declared", "Inferred", "Comparison"])
 
 # ============================================================== DECLARED =====
 with tabD:
@@ -286,6 +286,57 @@ with tabI:
                    "faster than the ground refills it. The space between the "
                    "lines is mine supply born outside the circuit (China, "
                    "Russia, Uzbekistan, Kazakhstan).")
+
+# ============================================================ COMPARISON =====
+with tabC:
+    st.subheader("Country activity comparison")
+    st.caption("Who has accumulated the most gold over the selected period? "
+               "— IMF declared net purchases, cumulative, "
+               f"as of {fmt(asof['declared'])}")
+
+    all_countries = t12.index.tolist()          # ranked by trailing-12m buying
+    picked = st.multiselect("Countries", all_countries,
+                            default=["Singapore", "China", "Russia"],
+                            key="cmp_countries")
+
+    d_min = declared.date.min().to_pydatetime()
+    d_max = declared.date.max().to_pydatetime()
+    start, end = st.slider("Date range", min_value=d_min, max_value=d_max,
+                           value=(d_min, d_max), format="MMM YYYY",
+                           key="cmp_dates")
+
+    if not picked:
+        st.info("Select at least one country to compare.")
+    else:
+        cmp = declared[declared.country.isin(picked)
+                       & (declared.date >= start) & (declared.date <= end)]
+        f = go.Figure()
+        for c in picked:
+            d = cmp[cmp.country == c].assign(
+                cum_t=lambda x: x.net_purchases_t.cumsum())
+            f.add_trace(go.Scatter(x=d.date, y=d.cum_t, name=c,
+                mode="lines", line=dict(color=dz.hue(c), width=2.2),
+                hovertemplate=f"{c}: %{{y:+,.1f}} t<extra></extra>"))
+            if len(d):
+                # anchored right and lifted above the line end, so the label
+                # stays inside the plot instead of running into the y-axis
+                f.add_annotation(x=d.date.iloc[-1], y=d.cum_t.iloc[-1],
+                                 text=f"<b>{c}</b> {d.cum_t.iloc[-1]:+,.0f} t",
+                                 showarrow=False, xanchor="right",
+                                 yanchor="bottom", xshift=-4, yshift=6,
+                                 font=dict(size=12, color=dz.hue(c)))
+        events(f, label=False)
+        f.add_hline(y=0, line_color=dz.GHOST, line_width=1)
+        f.update_xaxes(range=[start, end])
+        f.update_yaxes(title="cumulative tonnes")
+        f.update_layout(hovermode="x unified")
+        chart(f, 460)
+        st.caption("Lines: running total of reported net purchases, starting "
+                   "from zero at the left edge of the date range (rising = "
+                   "buying, falling = selling). Cumulating hides "
+                   "month-to-month swings. The dataset holds no "
+                   "country-level gold prices, so the comparison is in "
+                   "tonnes.")
 
 st.caption("Sources when live: COMEX front-month futures (GC=F), FRED DFII10, "
            "GLD and IAU daily bar lists, IMF International Financial "
