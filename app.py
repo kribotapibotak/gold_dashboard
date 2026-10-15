@@ -170,7 +170,7 @@ st.markdown('<p class="grammar"><b>Solid</b> marks reported series, '
             '<b>dashed</b> marks estimates. Each country keeps one colour on '
             'every panel.</p>', unsafe_allow_html=True)
 
-tabD, tabI, tabC = st.tabs(["Declared", "Inferred", "Comparison"])
+tabC, tabD, tabI,  = st.tabs(["Comparison", "Declared", "Inferred"])
 
 # ============================================================== DECLARED =====
 with tabD:
