@@ -116,7 +116,7 @@ def endlabel(fig, x, y, text, color=dz.FAINT):
 
 def chart(fig, h):
     fig.update_layout(height=h)
-    st.plotly_chart(fig, use_container_width=True,
+    st.plotly_chart(fig, use_container_width=True, theme=None,
                     config={"displayModeBar": False})
 
 def spark(vals, color, w=76, h=20):
